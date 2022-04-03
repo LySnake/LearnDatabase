@@ -72,3 +72,12 @@
 **数据库管理系统(Database Management System, DBMS)**:数据库管理系统，是位于用户与操作系统之间的一层数据管理软件。
 
 **数据库系统(Database System, DBS)**:DBMS、DBA以及DB组成的系统。
+
+### 1.5 DB软件及其DBMS
+
+**DB**:选择使用**MySQL 8.0.26**版本，安装后默认自带 `mysql Command line Client`客户端工具(DBMS)。
+
+**DBMS**:另外安装的可视化工具。
+
+> * SQLyog
+> * **Navicat**:不同版本支持多种数据库
