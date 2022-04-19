@@ -196,24 +196,22 @@ alter table <table-name> drop <feild-name>;
 | **double** | 8B                       |                 | 双精度                                                                            |
 | decimal          | 根据声明不同占用大小不同 |                 | decimal(10,2):表示值为10进制数表示时，数字的有效个数最大为10，其中小数部分占2位。 |
 
-
 #### 6.4.2 字符串类型
 
 > 在MySQL中存储字符序列的类型。
 
-| 类型          | 字符长度范围 | 说明                                                                                                                             |
-| ------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| 类型               | 字符长度范围 | 说明                                                                                                                             |
+| ------------------ | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | **char**     | [0, 2^8-1]   | 字长字符串，最多可以存储255个字符;当我们指定数据表字段为char(n)时，此列中的数据最长为n个字符，如果添加的数据少于n，则补'\u0000'. |
 | **varchar**  | [0, 2^16]    | 可变长度字符串，此类型的最大长度为2^16。                                                                                         |
-| tinyblob      | [0, 2^8-1]   | 存储二进制数据                                                                                                                   |
-| blob          | [0, 2^16]    | 存储二进制数据                                                                                                                   |
-| mediumblob    | [0, 2^24-1]  | 存储二进制数据整                                                                                                                 |
-| longblob      | [0,2^32-1]   | 存储二进制数据整                                                                                                                 |
-| tinytext      | [0, 2^8-1]   | 文本数据(字符串)                                                                                                                 |
-| text          | [0, 2^16-1]  | 文本数据(字符串)                                                                                                                 |
-| mediumtext    | [0, 2^24-1]  | 文本数据(字符串)                                                                                                                 |
+| tinyblob           | [0, 2^8-1]   | 存储二进制数据                                                                                                                   |
+| blob               | [0, 2^16]    | 存储二进制数据                                                                                                                   |
+| mediumblob         | [0, 2^24-1]  | 存储二进制数据整                                                                                                                 |
+| longblob           | [0,2^32-1]   | 存储二进制数据整                                                                                                                 |
+| tinytext           | [0, 2^8-1]   | 文本数据(字符串)                                                                                                                 |
+| text               | [0, 2^16-1]  | 文本数据(字符串)                                                                                                                 |
+| mediumtext         | [0, 2^24-1]  | 文本数据(字符串)                                                                                                                 |
 | **longtext** | [0,2^32-1]   | 文本数据(字符串)                                                                                                                 |
-
 
 #### 6.4.3 日期类型
 
@@ -228,7 +226,6 @@ alter table <table-name> drop <feild-name>;
 | year                | 2021                | ``年份``                         |
 | **datetime**  | 2021-09-01 11:12:13 | 日期+时间，存储 ``年月日时分秒`` |
 | **timestamp** | 20210913 111213     | 日期+时间(时间戳)                |
-
 
 #### 6.5 字段约束
 
@@ -345,3 +342,337 @@ create table types(
 ```
 
 Note:自动增长从1开始，每添加一条记录，自动增长的列会自动+1，当我们把某条记录删除之后再添加数据，自动增长的数据也不会重复生成(自动增长只保证唯一性不保证连续性)。
+
+##### 6.5.6 联合主键
+
+> 联合主键--将数据表中的多列组合在一起设置为表的主键
+
+**定义联合主键**
+
+```sql
+create table grades(
+	stu_num char(8),
+	course_id int,
+	score int,
+	primary key(stu_num, course_id)
+);
+```
+
+**Note**:在实际企业项目的数据库设计中，联合主键使用频率并不高;当一张数据表中没有明确的字段可以作为主键时，我们可以额外添加一个ID字段作为主键。
+
+##### 6.5.7 外键约束
+
+
+#### 6.6 DML 数据操纵语言
+
+> 用于完成对数据表中数据的插入、删除、修改操作
+
+```sql
+create table stus(
+	stu_num char(8) primary key,
+	stu_name varchar(28) not null,
+	stu_gender char(2) not null,
+	stu_age int not null,
+	stu_tell char(11) not null unique,
+	stu_qq varchar(11) unique
+);
+```
+
+##### 6.6.1 插入数据
+
+**语法**
+
+```sql
+insert into <table-name>(<feild-name1>[,<feild-name2>,...]) values(value1[,value2,...]);
+```
+
+**示例**
+
+```sql
+## 向数据表中指定的列添加数据(不允许为空的列必须提供数据)
+insert into stus(stu_num, stu_name, stu_gender, stu_age, stu_tel) values('20201111', '李四', '男', 18, '13172725412');
+
+## 数据表名后的字段名列表顺序可以不与表中一致，但是values中值的顺序必须与表名后字段名顺序对应
+insert into stus(stu_num, stu_name, stu_age, stu_tell, stu_gender) values('20210103', '五儿',21,'13132325413', '女');
+
+## 当要向表中的所有列添加数据时，数据表名后面的字段列表可以省略，但是values中的值的顺序要与数据表定义字段保持一致;
+insert into stus values('20201111', '李四', '男', 18, '13172725412');
+
+## 不过在项目开发中，即使要向所有列添加数据，也建议将列名的列表显式写出来(增强SQL的稳定性)
+insert into stus(stu_num, stu_name, stu_gender, stu_age, stu_tel,stu_qq) values('20201111', '李四', '男', 18, '13172725412', '131154156');
+```
+
+##### 6.6.2 删除数据
+
+> 从数据表中删除满足特定条件(所有)的记录
+
+**语法**
+
+```sql
+delete from <table-name> [where conditions];
+```
+
+**实例**
+
+```sql
+## 删除学号为20210102的学生信息
+delete from stus where stu_num='20210102';
+
+## 删除年龄大于20岁的学生信息(如果满足where子句的记录有多条，则删除多条记录)
+delete from stus where stu_age>20;
+
+## 如果删除语句没有where子句，则表示删除当前数据表中的所有记录(敏感操作)
+delete from stus;
+```
+
+##### 6.6.3 修改数据
+
+> 对数据表中已经添加的记录进行修改
+
+**语法**
+
+```sql
+update <table-name> set <feild-name>=value [where conditions];
+```
+
+**示例**
+
+```sql
+## 将学号为202021112的学生姓名修改为"孙七"(只修改一例)
+update stus set stu_name='孙七' where stu_num='202021112';
+
+## 将学号为202021112的学生，性别修改为"男"，同时将QQ修改为12345678(修改多列)
+update stus set stu_gender='男',stu_qq='12345678' where stu_num='202021112';
+
+## 根据主键修改其它所有列
+update stus set stu_name='张三',stu_gender='女',stu_age=18,stu_tell='13112135415',stu_qq='12345443' where stu_name='20210104'
+
+## 如果update语句没有where子句，则表示修改当前表中所有行(记录)
+update stus set stu_name='Tom';
+```
+
+#### 6.7 DQL 数据查询语言
+
+> 从数据表中提取满足特定条件的记录
+>
+> * 单表查询
+> * 多表联合查询
+
+##### 6.7.1 查询基础
+
+**语法**
+
+```sql
+## select 关键字后指定要显示查询到的记录的哪些列
+select <feild-name1>[,<feild-name2>,...] from <talbe-name>;
+
+## 如果要显示查询到的记录的所有列，则可以使用*替代字段名列表(在项目开发中不建议使用*)
+select * from <table-name>;
+```
+
+##### 6.7.2 where子句
+
+> 在删除、修改及查询的语句后都可以添加where子句(条件)，用于筛选满足特定的添加的数据进行删除、修改和查询操作。
+
+```sql
+delete from <table-name> [where conditions];
+update <table-name> set <feild-name1>[,<feild-name2>,...] values(value1[,value2,...]) [where conditions];
+select * from <table-name> [where conditions]; 
+```
+
+**条件**
+
+```sql
+## = 等于
+select * from stus where stu_num = '12345';
+
+## != 或 <>   不等于
+select * from stus where stu_num != '12345';
+select * from stus where stu_num <> '12345';
+
+## > 大于
+select * from stus where stu_age > 18;
+
+## < 小于
+select * from stus where stu_age < 21;
+
+
+## <= 小于等于
+select * from stus where stu_age <= 21;
+
+
+## >= 大于等于
+select * from stus where stu_age >= 18;
+
+```
+
+**多条件查询**
+
+> 在where子句中，可以将多个条件通过逻辑运算符(``and、or、not``)进行连接，通过多个条件来筛选要操作的数据。
+
+```sql
+## and 并且:筛选多个条件同时满足的记录
+select * from stus where stu_age>18 and stu_age<20;
+
+## or 或者:筛选多个条件中至少满足一个条件的记录
+select * from stus where stu_age<19 or stu_age>20;
+
+## not 取反
+## between value1and value2,表示值在[value1, value2]中的取值范围 
+select * from stus where not between 18 and 20;
+```
+
+##### 6.7.3 like查询:模糊查询
+
+> 在where子句的条件中，可以使用like关键字来实现模糊查询
+
+**语法**
+
+```sql
+select * from suts where stu_name link 'reg';
+```
+
+* 在link关键字后的reg表达式中
+  * **%** 表示任意多个字符[**%o%** 包含字母o]
+  * **_** 表示任意一个字符[ **_o%**  第二个字母为o]
+
+**示例**
+
+```sql
+# 查询学生姓名包含字母o的学生信息
+select * from stus where stu_name like '%o%';
+
+# 查询学生姓名第一个字为'张'的学生信息
+select * from stus where stu_name like 'o%';
+
+# 查询学生姓名最后一个字母为o的学生信息
+select * from stus where stu_name like '%o';
+
+# 查询学生姓名中第二个字母为o的学生信息
+select * from stus where stu_name like '_o%';
+```
+
+##### 6.7.4 对查询结果的处理
+
+**设置查询的列**
+
+> 声明显示查询结果的指定列
+
+```sql
+select <feild-name1>[,<feild-name2>,...] from stus where stu_age > 20;
+```
+
+**计算列**
+
+> 对从数据表中查询到的记录的列进行一定的运算之后显示出来
+
+```sql
+## 出生年份 = 当前年份 - 年龄
+select stu_name, 2022 - stu_age from stus;
+
++--------------------+-----------------+
+|    stu_name        |  2022 - stu_age |
++--------------------+-----------------+
+|    李四            |        2000     |
++--------------------+-----------------+
+|    张三            |        1993     |
++--------------------+-----------------+
+```
+
+**字段别名**
+
+> 我们可以为查询结果的列名取一个语义性更强的别名
+
+```sql
+select stu_name, 2022 - stu_age as stu_birth_year from stus;
++--------------------+-----------------+
+|    stu_name        |  stu_birth_year |
++--------------------+-----------------+
+|    李四            |        2000     |
++--------------------+-----------------+
+|    张三            |        1993     |
++--------------------+-----------------+
+
+select stu_name as 姓名, 2022 - stu_age as stu_birth_year from stus;
++--------------------+-----------------+
+|    姓名            |  stu_birth_year |
++--------------------+-----------------+
+|    李四            |        2000     |
++--------------------+-----------------+
+|    张三            |        1993     |
++--------------------+-----------------+
+```
+
+**消除重复行**
+
+> 从查询的结果中将重复的记录消除**distinct**
+
+```sql
+select stu_age from stus;
++--------------------+
+|    stu_age         |  
++--------------------+
+|      17            | 
++--------------------+
+|      17            | 
++--------------------+
+|      18            | 
++--------------------+
+
+select distinct stu_age from stus;
++--------------------+
+|    stu_age         |  
++--------------------+
+|      17            |
++--------------------+
+|      18            | 
++--------------------+
+```
+
+##### 6.7.5 order by:排序
+
+> 将查询到的满足条件的记录按照指定的列的值升序/降序排列
+
+**语法**
+
+```sql
+select * from <table-name> where conditions order by <feild-name> asc|desc;
+```
+
+* ``order by <feild-name>``表示将查询结果按照指定的列排序
+  * asc表示按指定的列的升序排列(**默认**)
+  * desc表示按指定的列的降序排列
+
+**实例**
+
+```sql
+# 单字段排序
+select stu_gender from stus where stu_age>18 order by stu_gender desc;
++--------------------+
+|      stu_gender    |  
++--------------------+
+|         男         |
++--------------------+
+|         男         |
++--------------------+
+|         男         |
++--------------------+
+|         女         | 
++--------------------+
+
+# 多字段排序: 先满足
+select stu_gender,stu_age from stus where stu_age>18 order by stu_gender asc,stu_age order by desc;
++--------------------+--------------------+
+|      stu_gender    |       stu_age      |
++--------------------+--------------------+
+|         女         |         21         |
++--------------------+--------------------+
+|         女         |         20         |
++--------------------+--------------------+
+|         女         |         19         |
++--------------------+--------------------+
+|         男         |         23         |
++--------------------+--------------------+
+|         男         |         19         |
++--------------------+--------------------+
+```
