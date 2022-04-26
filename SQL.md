@@ -973,3 +973,354 @@ select * from stus limit 9,3;
 **方案2**:唯一外键约束--在任意一 线表中添加一个字段，添加外键约束与另一张表主键关联，并且将外键列设置为唯一约束(**unique**)
 
 > 即表A增加一个字段feild,其中feild字段设置为外键约束且为唯一约束，其值与表B的主键一一对应。
+
+#### 7.3 一对多与多对一
+
+> 班级--学生   (一对多)
+>
+> 学和--班级   (多对一)
+
+**方案**:在表A(多的一端)添加外键，与表B(少的一端)的主键进行关联。
+
+> 比如:学生表，是 `多`的一端，班级一有是 `一`的一端，所以学生表中增加一个外键与班级表的主键进行关联。
+
+#### 7.4 多对多关联
+
+> 学生--课程  一个学生可以选择多门课、一门课程也可以由多个学生选择
+>
+> 会员--社团  一个会员可以参加多个社团，一个社团也可以招纳多个会员
+
+**方案**:额外创建一张关系表来维护多对多关联。
+
+> 比如：
+>
+> 学生表A:每个学生可以选择多个课程。
+>
+> 课程表B:每个课程可以被多个学生选择。
+>
+> 新建关系表:可以提供一列作为 `自增主键`ID，或使用 `联合主键`,另外二列为 `外键`，一个外键关联表A的主键，一个外键关联表B的主键。
+
+#### 7.5 外键约束
+
+> 外键约束--将一个列添加外键约束与另一张表的主键(或唯一约束的列)进行关联之后，这个外键约束的列添加的数据必须要在关联的主键字段中存在。
+
+**案例** ：学生表与班级表
+
+1. 先创建班级表
+
+   ```sql
+   create table classes(
+   	class_id int primary key auto_increment,
+   	class_name varchar(20) not null unique,
+   	class_remark varchar(200)
+   );
+   ```
+2. 创建学生表(在学生表中添加外键与班级表的主键进行关联)
+
+```
+# [方式1]
+# 在创建表的时候，定义cid字段，并添加外键约束
+# 由于cid列要与classes表的class_id进行关联，因此cid字段类型和长度要与class_id一致
+create table students(
+	stu_num char(8) primary key,
+	stu_name varchar(20) not null,
+	stu_gender varchar(2) not null,
+	stu_age int not null,
+	cid int,
+	constraint FK_STUDENTS_CLASSES foreign key(cid) references classes (class_id)
+);
+
+# [方式2]
+# 先正常创建表，再添加外键约束
+create table students(
+	stu_num char(8) primary key,
+	stu_name varchar(20) not null,
+	stu_gender varchar(2) not null,
+	stu_age int not null,
+	cid int
+);
+
+alter talbe students add constraint FK_STUDENTS_CLASSES foreign key(cid) references classes(class_id);
+
+# 删除外键约束
+alter table students drop foreign key FK_STUDENTS_CLASSES;
+```
+
+3. 向班级表添加班级信息
+
+   ```sql
+   insert into classes(class_name, class_remark) values('数学', '...');
+   insert into classes(class_name, class_remark) values('语文', '...');
+   insert into classes(class_name, class_remark) values('化学', '...');
+   insert into classes(class_name, class_remark) values('物理', '...');
+
+   select * from classes;
+   +--------------------+----------------+-----------------+
+   |      class_id      |    class_name  |  class_remark   |
+   +--------------------+----------------+-----------------+
+   |         1          |     数学       |      ...        |
+   +--------------------+----------------+-----------------+
+   |         2          |     语文       |      ...        |
+   +--------------------+----------------+-----------------+
+   |         3          |     化学       |      ...        |
+   +--------------------+----------------+-----------------+
+   |         4          |     物理       |      ...        |
+   +--------------------+----------------+-----------------+
+
+
+   ```
+4. 向学生表中添加学生信息
+
+   ```sql
+   # 添加成功，因为cid为4的班级存在
+   insert into students(stu_num, stu_name, stu_gender, stu_age, cid) 
+   values('20220102', 'Tom', '女', 18, 4);
+
+   # 添加失败，设置能cid的外键列的值必须在其关联的主表classes的class_id的列存在
+   insert into students(stu_num, stu_name, stu_gender, stu_age, cid) 
+   values('20220103', 'lucy', '女', 18, 5);
+   ```
+
+#### 7.5 外键约束-级联
+
+> **级联操作**:在添加外键时，设置为级联修改和级联删除,比如表B的主键被表A的外键所叛逆。
+>
+> * 级联修改:当表B的主键的某条记录由a改为b，那么表A中的外键上所有原值为a的记录全改为b(仅改对应列上的字段值)。
+> * 级联删除:当表B删除了一条记录行，则该记录行的主键值对应的表A的外键上所有相同值的记录，均会在表A中删除所有匹配行。
+
+**语法**：
+
+```sql
+# 删除原来的外键
+alter table students drop foreign key FK_STUDENTS_CLASSES;
+
+# 重新添加外键，并设置级联修改和级联删除
+alter table students add constraint FK_STUDENTS_CLASSES foreign key(cid) references classes(class_id) ON UPDATE CASCADE ON DELETE CASCADE;
+```
+
+**不使用级联操作时**
+
+> 当学生表中存在学生信息关联班级表中的某条记录时，就不能对班级表的这条记录进行值修改和删除操作
+
+> 如果要修改或删除存在外键关联的列的值，常规操作为:
+>
+> * 将引用该值的外键所在的记录，修改为NULL，即解除外键值与关联表主键值之间的关联关系。
+> * 再修改/删除需要修改的被外键关联的主键的记录。
+> * 然后再修改外键为NULL的值为新的值或删除。
+
+**使用级联操作时**
+
+> * 级联关系由表本身的属性，可以设置。
+> * 当有依赖的表A的外键和表B的主键关联了
+>   * 表B的主键的某条记录由a改为b，那么表A的的外键列，所有原值为a的记录全都会被修改为b.
+>   * 表B的主键的某条记录行为a的值的行被删除时，那么表A的的外键列值为a的记录行，也会同步删除该记录行。
+
+### 8. 连接查询
+
+> 通过对DQL的学习，我们可以很轻松的从一张数据静听 查询出需要的数据；在企业的应用开发中，我们经常需要从多张表中查询数据(如:查询学 生信息的时候需要同时查询学生的班级信息),可以通过连接查询从多张数据表提取数据;
+>
+> 在MySQL中可以使用join实现多表的联合查询--连接查询,join按照其功能不同，分为三个操作：
+>
+> * inner join 内连接
+> * left join 左连接
+> * right join 右连接
+
+#### 8.1 数据准备
+
+##### 8.1.1 创建数据表
+
+创建班级信息表和学生信息表
+
+```sql
+create table classes(
+	class_id int primary key auto_increment,
+	class_name varchar(20) not null unique,
+	class_remark varchar(200)
+);
+
+create table students(
+	stu_num char(8) primary key,
+	stu_name varchar(20) not null,
+	stu_gender char(2) not null,
+	stu_age int not null,
+	cid int,
+	constraint FK_STUDENTS_CLASSES foreign key(cid) references classes(class_id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+```
+
+##### 8.1.2 添加数据
+
+添加班级数据
+
+```sql
+inert into classes(class_name, class_remark) values('Java2104', '...');
+inert into classes(class_name, class_remark) values('Java2105', '...');
+inert into classes(class_name, class_remark) values('Java2106', '...');
+inert into classes(class_name, class_remark) values('Python2107', '...');
+```
+
+添加学生信息
+
+```sql
+insert into students(stu_num, stu_name, stu_gender, stu_age, cid) values('20210101','张三'，'男', 20, 1);
+
+insert into students(stu_num, stu_name, stu_gender, stu_age, cid) values('20210102','李四'，'女', 20, 1);
+
+insert into students(stu_num, stu_name, stu_gender, stu_age, cid) values('20210103','王五'，'男', 20, 1);
+
+insert into students(stu_num, stu_name, stu_gender, stu_age, cid) values('20210104','赵六'，'女', 20, 2);
+
+insert into students(stu_num, stu_name, stu_gender, stu_age, cid) values('20210105','孙七'，'男', 20, 2);
+
+insert into students(stu_num, stu_name, stu_gender, stu_age, cid) values('20210106','小红'，'女', 20);
+
+insert into students(stu_num, stu_name, stu_gender, stu_age, cid) values('20210107','小明'，'男', 20);
+```
+
+#### 8.2 内连接 INNER JOIN
+
+**语法**
+
+> select * from `<table-name1> inner join <table-name2>;`
+
+##### 8.2.1 笛卡尔积
+
+* 笛卡尔积(A集合&B集合):使用A中的每个记录一次关联B中每个记录，笛卡尔积的总数=A总*B总数。
+* 如果直接执行 ``select * from <table-name1> inner join <table-name2>;``，会获取到两种表中的数据集合的笛卡尔积（依次使用 `<table-name1> `表中的每条记录去匹配 `<table-name2>` `的每条数据。 `
+
+##### 8.2.2 内连接条件
+
+> 查询二张表时用inner join连接查询之后 产生的笛卡尔积数据中很多数据都是无意义的，我们如何消除无意义的数据呢？--添加二种进行连接查询时的条件。
+
+* 使用 `ON`设置二张表连接查询的匹配条件
+
+  ```sql
+  # 使用where设置过滤条件：先生成笛卡尔积再从笛卡尔积中过滤数据(效率低)
+  select * from students inner join classes where students.cid = classes.class_id;
+
+  # 使用on设置连接查询条件:先判断连接条件是否成立，如果成立那么二张表的数据进 行组合和生成一条结果记录
+  select * from students inner join classes on students.cid = classes.class_id;
+  ```
+* 结果：只获取两种表中匹配条件成立的数据，任何一张表在另一张表如果没有找到匹配则不会出现在查询结果中(例如:小红和小明没有对应的班级信息，Java2106和Python2106没有对应的学生)。
+
+#### 8.3 左连接 LEFT JOIN
+
+> 需求：请查询出所有的学生信息，如果学生有对应的班级信息，则将对应的班级信息也查询出来。
+
+**左连接**:显示左表中的所有数据，如果在右表中存在与左表记录满足匹配条件的数据，则进行匹配;如果右表中不存在匹配数据，则显示为NULL。
+
+**语法**
+
+```sql
+# on conditions:是left join的连接条件，避免生成笛卡积，效率低下
+# where conditions:是针对最后的结果，做过虑操作。
+
+select * from <left-table-name> 
+left join <right-talbe-name> 
+[on conditions] 
+[where conditions];
+```
+
+#### 8.4 右连接 RIGHT JOIN
+
+**右连接** :显示右表中的所有记录
+
+**语法**
+
+```sql
+# on conditions:是left join的连接条件，避免生成笛卡积，效率低下
+# where conditions:是针对最后的结果，做过虑操作。
+
+select * from <left-table-name> 
+right join <right-table-name>
+[on conditions]
+[where conditions];
+```
+
+#### 8.5 数据表别名
+
+> 如果在连接查询的多经和表中存在相同名字的字段，我们可以使用 `表名.字段名`进行区分，如果表名太长则不便于SQL语句的书写，我们可以使用数据表别名。
+
+**示例**
+
+```sql
+# s是表students的别名
+# c是表classes的别名
+select s.*, c.class_name from students sinner join classes c on s.cid  = t.class_id;
+```
+
+### 8.6 子查询/嵌套查询
+
+> 子查询-先进行一次查询，第一次查询的结果作为第二次查询的源/条件(第二次查询是基于第一次的查询结果来进行的)
+
+#### 8.6.1 子查询返回单个值
+
+**示例：**`查询班级名称为 Java2104 班级中的学生信息`(只知道班级名称，而不知道班级ID)
+
+* 传统方式:
+
+  ```sql
+  # 先查询出 Java2104 班的班级ID
+  select class_id from classes where class_name ='Java2104';
+
+  # 再根据查询到的class_id，在表students中查询到相关学生
+  select * from students where cid = 1;
+  ```
+* 子查询
+
+  ```sql
+  # 括号中的句子即为子句。
+  select * from students where cid = (select class_id from classes where class_name = 'Java2104');
+  ```
+
+#### **8.6.2 子查询返回多个值**
+
+**示例**: `查询所有Java班级中的学生信息`
+
+* 传统方式:
+
+  ```sql
+  # 先查询出所有班级名称为Java开头的班级ID
+  select class_id from classes where class_name like 'Java%';
+
+  +----------+
+  | class_id |
+  +----------+
+  |     1    |
+  +----------+
+  |     2    |
+  +----------+
+  |     1    |
+  +----------+
+
+  # union:将多个查询语句的结果整合在一起输出(必需是输出样式一)
+  select * from students where cid = 1
+  union
+  select * from students where cid = 1
+  union
+  select * from students where cid = 1;
+  ```
+* 子查询
+
+  ```sql
+  # 括号中的是子句，且查询结果为单字段多列结果，即为一个class_id的结果集合
+  # IN/NOT IN:表示该cid 属于/不属于该集合
+  select * from students where cid in (select class_id from classes where class_name like 'Java%');
+  ```
+
+#### 8.6.3 子查询返回多个值--多行多列
+
+**示例**:`查询cid=1的班级中性别为男的学生信息`
+
+* 传统方式
+
+```sql
+# 多条件查询
+select * from students where cid = 1 and stu_gender = '男';
+```
+
+* 子查询
+  ```sql
+  # 括号中的子句，查询结果为所有cid班级中的学生，将这些信息作为一个整体(students的子表或虚拟表，多行多列)，并为该虚拟表起别名为t(虚拟表需要起别名)，再对该虚拟表进行查询
+  select * from (select * from students where cid = 1) t where t.stu_gender = '男';
+  ```
